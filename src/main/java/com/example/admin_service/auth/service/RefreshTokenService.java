@@ -12,7 +12,7 @@ import java.util.UUID;
 @Service
 public class RefreshTokenService {
 
-    @Value("${jwt.refresh.expiration}")
+    @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
 
     private final RefreshTokenRepository repo;
@@ -22,7 +22,7 @@ public class RefreshTokenService {
     }
 
     public RefreshToken createToken(String username) {
-        repo.deleteByUsername(username);
+
 
         RefreshToken refresh = RefreshToken.builder()
                 .username(username)

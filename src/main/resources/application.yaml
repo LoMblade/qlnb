@@ -12,7 +12,5 @@ spring:
 
 jwt:
   secret: "MySuperSecretKeyMySuperSecretKeyMySuperSecretKey"
-  expiration: 3600000
-  refresh:
-    expiration: 604800000
-
+  expiration: 3600000              # access token: 1 giờ
+  refresh-expiration: 604800000    # refresh token: 7 ngày
