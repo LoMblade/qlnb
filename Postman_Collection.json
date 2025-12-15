@@ -1,0 +1,831 @@
+{
+	"info": {
+		"name": "Admin Service API",
+		"description": "Collection để test hệ thống quản lý phân quyền",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"accessToken\", jsonData.accessToken);",
+									"    pm.environment.set(\"refreshToken\", jsonData.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"newuser\",\n    \"password\": \"password123\",\n    \"email\": \"newuser@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "refresh"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Users (Admin CRUD)",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Get User By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"user2\",\n    \"password\": \"password123\",\n    \"email\": \"user2@example.com\",\n    \"roleCode\": \"USER\",\n    \"departmentCode\": \"IT\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Update User (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"user2\",\n    \"password\": \"newpassword123\",\n    \"email\": \"user2updated@example.com\",\n    \"roleCode\": \"TEAM_LEAD\",\n    \"departmentCode\": \"HR\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/2",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "2"]
+						},
+						"description": "Admin có thể update tất cả thông tin user bao gồm role và department"
+					}
+				},
+				{
+					"name": "Update User (TEAM_LEAD)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teamLeadToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"teamuser1\",\n    \"email\": \"teamuser1updated@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "3"
+								}
+							]
+						},
+						"description": "TEAM_LEAD chỉ có thể update user trong phòng ban của mình, KHÔNG thể update role và department"
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/2",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "2"]
+						}
+					}
+				},
+				{
+					"name": "Get Users By Department",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/department/IT",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "department", "IT"]
+						}
+					}
+				},
+				{
+					"name": "Get Users By Role",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/role/USER",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "role", "USER"]
+						}
+					}
+				},
+				{
+					"name": "Get My Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "me"]
+						},
+						"description": "User xem thông tin cá nhân của chính mình"
+					}
+				},
+				{
+					"name": "Get Users Without Department",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/without-department",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "without-department"]
+						},
+						"description": "Xem danh sách user không có department (chỉ ADMIN và TEAM_LEAD)"
+					}
+				},
+				{
+					"name": "Add User To My Department (TEAM_LEAD Only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teamLeadToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"newuser\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/add-to-department",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "add-to-department"]
+						},
+						"description": "TEAM_LEAD thêm user không có department vào phòng ban của mình"
+					}
+				},
+				{
+					"name": "Assign Role and Department to User (Admin Only)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"roleCode\": \"TEAM_LEAD\",\n    \"departmentCode\": \"IT\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id/assign-role",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id", "assign-role"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "3",
+									"description": "User ID cần cấp quyền"
+								}
+							]
+						},
+						"description": "Admin cấp role và department cho user. Ví dụ: cấp TEAM_LEAD cho user lên trưởng phòng. Lưu ý: 1 department chỉ có 1 TEAM_LEAD"
+					}
+				}
+			]
+		},
+		{
+			"name": "Departments (CRUD)",
+			"item": [
+				{
+					"name": "Get All Departments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/departments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "departments"]
+						}
+					}
+				},
+				{
+					"name": "Get Department By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/departments/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "departments", "1"]
+						}
+					}
+				},
+				{
+					"name": "Get Department By Code",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/departments/code/IT",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "departments", "code", "IT"]
+						}
+					}
+				},
+				{
+					"name": "Create Department",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"departmentCode\": \"MARKETING\",\n    \"name\": \"Marketing Department\",\n    \"description\": \"Marketing and Communications\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/departments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "departments"]
+						}
+					}
+				},
+				{
+					"name": "Update Department",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"departmentCode\": \"MARKETING\",\n    \"name\": \"Marketing & Communications\",\n    \"description\": \"Updated Marketing Department\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/departments/5",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "departments", "5"]
+						}
+					}
+				},
+				{
+					"name": "Delete Department",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/departments/5",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "departments", "5"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Roles",
+			"item": [
+				{
+					"name": "Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "roles"]
+						}
+					}
+				},
+				{
+					"name": "Get Roles Hierarchy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/roles/hierarchy",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "roles", "hierarchy"]
+						}
+					}
+				},
+				{
+					"name": "Get Role By Code",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/roles/code/ADMIN",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "roles", "code", "ADMIN"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Permissions",
+			"item": [
+				{
+					"name": "Get All Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/permissions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "permissions"]
+						}
+					}
+				},
+				{
+					"name": "Get Permissions By Resource Type",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/permissions/resource/USER",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "permissions", "resource", "USER"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Role Permissions (Admin Only)",
+			"item": [
+				{
+					"name": "Assign Permissions To Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"roleCode\": \"TEAM_LEAD\",\n    \"permissionCodes\": [\n        \"USER_CREATE\",\n        \"USER_READ\",\n        \"USER_UPDATE\",\n        \"USER_DELETE\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/role-permissions/assign",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "role-permissions", "assign"]
+						}
+					}
+				},
+				{
+					"name": "Get Permissions By Role Code",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/role-permissions/role/TEAM_LEAD",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "role-permissions", "role", "TEAM_LEAD"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Team Lead Tests",
+			"item": [
+				{
+					"name": "Login Team Lead",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"teamLeadToken\", jsonData.accessToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"teamlead\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Team Lead - Get Users In My Department",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teamLeadToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Team Lead - Create User In My Department",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teamLeadToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"teamuser1\",\n    \"password\": \"password123\",\n    \"email\": \"teamuser1@example.com\",\n    \"roleCode\": \"USER\",\n    \"departmentCode\": \"IT\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users"]
+						}
+					}
+				},
+				{
+					"name": "Team Lead - Update User In My Department",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teamLeadToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"teamuser1\",\n    \"email\": \"teamuser1updated@example.com\",\n    \"roleCode\": \"USER\",\n    \"departmentCode\": \"IT\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "3"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Team Lead - Delete User In My Department",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teamLeadToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "3"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Team Lead - Get Users Without Department",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teamLeadToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/without-department",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "without-department"]
+						},
+						"description": "TEAM_LEAD xem danh sách user không có department để thêm vào phòng ban"
+					}
+				},
+				{
+					"name": "Team Lead - Add User To My Department",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teamLeadToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"newuser\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/add-to-department",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "add-to-department"]
+						},
+						"description": "TEAM_LEAD thêm user không có department vào phòng ban của mình"
+					}
+				},
+				{
+					"name": "Team Lead - Get My Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teamLeadToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "me"]
+						},
+						"description": "Xem thông tin cá nhân"
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}
+
