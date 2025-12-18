@@ -20,47 +20,57 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     @Transactional
     public PermissionResponseDTO createPermission(PermissionRequestDTO dto) {
-        if (permissionRepository.existsByPermissionCode(dto.getPermissionCode())) {
-            throw new RuntimeException("Permission code already exists: " + dto.getPermissionCode());
+
+        String permissionCode = dto.getPermissionCode().toUpperCase().trim();
+
+        if (permissionRepository.existsByPermissionCode(permissionCode)) {
+            throw new RuntimeException("Permission code already exists: " + permissionCode);
         }
 
         Permission permission = Permission.builder()
-                .permissionCode(dto.getPermissionCode())
+                .permissionCode(permissionCode)
                 .name(dto.getName())
                 .description(dto.getDescription())
                 .resourceType(dto.getResourceType())
                 .actionType(dto.getActionType())
                 .build();
 
-        permission = permissionRepository.save(permission);
-        return mapToDTO(permission);
+        return mapToDTO(permissionRepository.save(permission));
     }
 
     @Override
     public PermissionResponseDTO getPermissionById(Long id) {
         Permission permission = permissionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Permission not found with id: " + id));
+                .orElseThrow(() ->
+                        new RuntimeException("Permission not found with id: " + id)
+                );
         return mapToDTO(permission);
     }
 
     @Override
     public PermissionResponseDTO getPermissionByCode(String permissionCode) {
-        Permission permission = permissionRepository.findByPermissionCode(permissionCode)
-                .orElseThrow(() -> new RuntimeException("Permission not found with code: " + permissionCode));
+        Permission permission = permissionRepository
+                .findByPermissionCode(permissionCode.toUpperCase())
+                .orElseThrow(() ->
+                        new RuntimeException("Permission not found with code: " + permissionCode)
+                );
         return mapToDTO(permission);
     }
 
     @Override
     public List<PermissionResponseDTO> getAllPermissions() {
-        return permissionRepository.findAll().stream()
+        return permissionRepository.findAll()
+                .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<PermissionResponseDTO> getPermissionsByResourceType(String resourceType) {
-        Permission.ResourceType type = Permission.ResourceType.valueOf(resourceType.toUpperCase());
-        return permissionRepository.findByResourceType(type).stream()
+    public List<PermissionResponseDTO> getPermissionsByResourceType(
+            Permission.ResourceType resourceType
+    ) {
+        return permissionRepository.findByResourceType(resourceType)
+                .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -68,30 +78,29 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     @Transactional
     public PermissionResponseDTO updatePermission(Long id, PermissionRequestDTO dto) {
+
         Permission permission = permissionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Permission not found with id: " + id));
+                .orElseThrow(() ->
+                        new RuntimeException("Permission not found with id: " + id)
+                );
 
-        if (!permission.getPermissionCode().equals(dto.getPermissionCode()) &&
-            permissionRepository.existsByPermissionCode(dto.getPermissionCode())) {
-            throw new RuntimeException("Permission code already exists: " + dto.getPermissionCode());
-        }
-
-        permission.setPermissionCode(dto.getPermissionCode());
+        // KHÔNG CHO UPDATE permissionCode
         permission.setName(dto.getName());
         permission.setDescription(dto.getDescription());
         permission.setResourceType(dto.getResourceType());
         permission.setActionType(dto.getActionType());
 
-        permission = permissionRepository.save(permission);
-        return mapToDTO(permission);
+        return mapToDTO(permissionRepository.save(permission));
     }
 
     @Override
     @Transactional
     public void deletePermission(Long id) {
+
         if (!permissionRepository.existsById(id)) {
             throw new RuntimeException("Permission not found with id: " + id);
         }
+
         permissionRepository.deleteById(id);
     }
 
@@ -106,4 +115,3 @@ public class PermissionServiceImpl implements PermissionService {
                 .build();
     }
 }
-

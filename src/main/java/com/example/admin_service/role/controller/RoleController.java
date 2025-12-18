@@ -37,7 +37,7 @@ public class RoleController {
         return ResponseEntity.ok(roleService.getAllRoles());
     }
 
-    @GetMapping("/hierarchy")
+    @GetMapping("/hierarchy")   // phân cấp role
     public ResponseEntity<List<RoleResponseDTO>> getRolesHierarchy() {
         return ResponseEntity.ok(roleService.getRolesHierarchy());
     }

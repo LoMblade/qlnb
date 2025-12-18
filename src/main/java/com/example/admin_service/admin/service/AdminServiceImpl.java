@@ -37,17 +37,4 @@ public class AdminServiceImpl implements AdminService {
                 .role(saved.getRole().name())
                 .build();
     }
-
-    @Override
-    public AdminResponseDTO getAdmin(Long id) {
-        Admin admin = adminRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
-
-        return AdminResponseDTO.builder()
-                .id(admin.getId())
-                .username(admin.getUsername())
-                .email(admin.getEmail())
-                .role(admin.getRole().name())
-                .build();
-    }
 }

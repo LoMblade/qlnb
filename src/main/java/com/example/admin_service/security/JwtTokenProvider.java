@@ -11,58 +11,60 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
+    // Secret key dùng để ký và verify JWT (lấy từ application.yml)
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    // Thời gian sống của access token (ms)
     @Value("${jwt.expiration}")
     private long accessTokenExpirationMs;
 
+    // Thời gian sống của refresh token (ms)
     @Value("${jwt.refresh-expiration}")
     private long refreshTokenExpirationMs;
 
-    /* ===================== CONSTANT ===================== */
-
+    // Định danh loại token
     public static final String TOKEN_TYPE_ACCESS = "ACCESS";
     public static final String TOKEN_TYPE_REFRESH = "REFRESH";
 
-    /* ===================== CORE ===================== */
-
+    // Tạo key ký JWT từ secret
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    /* ===================== GENERATE ===================== */
-
-    /** ACCESS TOKEN */
+    // Sinh access token
     public String generateAccessToken(
             String username,
             String roleCode,
             String departmentCode
     ) {
         return Jwts.builder()
-                .setSubject(username)
-                .claim("role", roleCode)
-                .claim("department", departmentCode)
-                .claim("type", TOKEN_TYPE_ACCESS)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
+                .setSubject(username)                  // subject = username
+                .claim("role", roleCode)               // gắn role vào token
+                .claim("department", departmentCode)   // gắn department
+                .claim("type", TOKEN_TYPE_ACCESS)      // đánh dấu ACCESS token
+                .setIssuedAt(new Date())               // thời điểm tạo
+                .setExpiration(
+                        new Date(System.currentTimeMillis() + accessTokenExpirationMs)
+                )                                      // thời điểm hết hạn
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    /** REFRESH TOKEN */
+    // Sinh refresh token
     public String generateRefreshToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
-                .claim("type", TOKEN_TYPE_REFRESH)
+                .claim("type", TOKEN_TYPE_REFRESH)     // đánh dấu REFRESH token
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpirationMs))
+                .setExpiration(
+                        new Date(System.currentTimeMillis() + refreshTokenExpirationMs)
+                )
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    /* ===================== BACKWARD COMPAT ===================== */
-    /** Giữ lại cho code cũ nếu đang gọi */
+    // Overload tiện dùng
     public String generateToken(String username, String roleCode, String departmentCode) {
         return generateAccessToken(username, roleCode, departmentCode);
     }
@@ -71,26 +73,27 @@ public class JwtTokenProvider {
         return generateAccessToken(username, roleCode, null);
     }
 
-    /* ===================== PARSE ===================== */
-
+    // Lấy username từ token
     public String getUsernameFromJWT(String token) {
         return parseClaims(token).getSubject();
     }
 
+    // Lấy role từ token
     public String getRoleFromJWT(String token) {
         return parseClaims(token).get("role", String.class);
     }
 
+    // Lấy department từ token
     public String getDepartmentFromJWT(String token) {
         return parseClaims(token).get("department", String.class);
     }
 
+    // Lấy loại token (ACCESS / REFRESH)
     public String getTokenType(String token) {
         return parseClaims(token).get("type", String.class);
     }
-
-    /* ===================== VALIDATE ===================== */
-
+    
+    // Kiểm tra token hợp lệ (đúng chữ ký, chưa hết hạn)
     public boolean validateToken(String token) {
         try {
             parseClaims(token);
@@ -100,16 +103,17 @@ public class JwtTokenProvider {
         }
     }
 
+    // Check access token
     public boolean isAccessToken(String token) {
         return TOKEN_TYPE_ACCESS.equals(getTokenType(token));
     }
 
+    // Check refresh token
     public boolean isRefreshToken(String token) {
         return TOKEN_TYPE_REFRESH.equals(getTokenType(token));
     }
 
-    /* ===================== INTERNAL ===================== */
-
+    // Parse JWT và verify chữ ký
     private Claims parseClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
@@ -118,3 +122,4 @@ public class JwtTokenProvider {
                 .getBody();
     }
 }
+

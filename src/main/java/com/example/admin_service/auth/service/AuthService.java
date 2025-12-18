@@ -22,6 +22,9 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Constructor cho AuthService, inject các dependency cần thiết.
+     */
     public AuthService(
             UserRepository userRepository,
             JwtTokenProvider jwtTokenProvider,
@@ -32,12 +35,13 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    /* ===================== LOGIN ===================== */
 
     public TokenResponse login(LoginRequest req) {
 
+        // Log thông tin login attempt
         logger.info("Login attempt: {}", req.getUsername());
 
+        // Lấy user từ DB theo username, nếu không tồn tại ném lỗi UNAUTHORIZED
         User user = userRepository.findByUsername(req.getUsername())
                 .orElseThrow(() ->
                         new ResponseStatusException(
@@ -46,26 +50,20 @@ public class AuthService {
                         )
                 );
 
+        // Kiểm tra trạng thái active của user
         if (Boolean.FALSE.equals(user.getActive())) {
             throw new DisabledException("User is inactive");
         }
 
-        String roleCode =
-                user.getRole() != null ? user.getRole().getRoleCode() : null;
+        // Lấy roleCode và departmentCode nếu có
+        String roleCode = user.getRole() != null ? user.getRole().getRoleCode() : null;
+        String departmentCode = user.getDepartment() != null ? user.getDepartment().getDepartmentCode() : null;
 
-        String departmentCode =
-                user.getDepartment() != null ? user.getDepartment().getDepartmentCode() : null;
+        // Tạo access token và refresh token
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getUsername(), roleCode, departmentCode);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
 
-        String accessToken =
-                jwtTokenProvider.generateAccessToken(
-                        user.getUsername(),
-                        roleCode,
-                        departmentCode
-                );
-
-        String refreshToken =
-                jwtTokenProvider.generateRefreshToken(user.getUsername());
-
+        // Trả về TokenResponse
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -73,44 +71,30 @@ public class AuthService {
                 .build();
     }
 
-    /* ===================== REFRESH ===================== */
 
     public TokenResponse refresh(String refreshToken) {
 
-        if (!jwtTokenProvider.validateToken(refreshToken)
-                || !jwtTokenProvider.isRefreshToken(refreshToken)) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Invalid refresh token"
-            );
+        // Kiểm tra tính hợp lệ và loại token
+        if (!jwtTokenProvider.validateToken(refreshToken) || !jwtTokenProvider.isRefreshToken(refreshToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
         }
 
+        // Lấy username từ refresh token
         String username = jwtTokenProvider.getUsernameFromJWT(refreshToken);
 
+        // Lấy user từ DB theo username
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.UNAUTHORIZED,
-                                "User not found"
-                        )
+                        new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found")
                 );
 
-        String roleCode =
-                user.getRole() != null ? user.getRole().getRoleCode() : null;
+        // Lấy roleCode và departmentCode
+        String roleCode = user.getRole() != null ? user.getRole().getRoleCode() : null;
+        String departmentCode = user.getDepartment() != null ? user.getDepartment().getDepartmentCode() : null;
 
-        String departmentCode =
-                user.getDepartment() != null ? user.getDepartment().getDepartmentCode() : null;
-
-        String newAccessToken =
-                jwtTokenProvider.generateAccessToken(
-                        username,
-                        roleCode,
-                        departmentCode
-                );
-
-        String newRefreshToken =
-                jwtTokenProvider.generateRefreshToken(username);
+        // Tạo access token và refresh token mới
+        String newAccessToken = jwtTokenProvider.generateAccessToken(username, roleCode, departmentCode);
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(username);
 
         return TokenResponse.builder()
                 .accessToken(newAccessToken)
@@ -119,36 +103,31 @@ public class AuthService {
                 .build();
     }
 
-    /* ===================== REGISTER ===================== */
-
     public TokenResponse register(RegisterRequest req) {
 
+        // Kiểm tra username đã tồn tại
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new RuntimeException("Username already exists");
         }
 
+        // Kiểm tra email đã tồn tại nếu email được cung cấp
         if (req.getEmail() != null && userRepository.existsByEmail(req.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
 
+        // Tạo user mới và mã hóa password
         User user = User.builder()
                 .username(req.getUsername())
                 .password(passwordEncoder.encode(req.getPassword()))
                 .email(req.getEmail())
-                .active(true)
+                .active(true) // mặc định active
                 .build();
 
         userRepository.save(user);
 
-        String accessToken =
-                jwtTokenProvider.generateAccessToken(
-                        user.getUsername(),
-                        null,
-                        null
-                );
-
-        String refreshToken =
-                jwtTokenProvider.generateRefreshToken(user.getUsername());
+        // Tạo access token và refresh token cho user mới
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getUsername(), null, null);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
 
         return TokenResponse.builder()
                 .accessToken(accessToken)

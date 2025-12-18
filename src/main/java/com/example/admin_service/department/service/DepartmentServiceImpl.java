@@ -5,6 +5,7 @@ import com.example.admin_service.department.dto.DepartmentResponseDTO;
 import com.example.admin_service.department.entity.Department;
 import com.example.admin_service.department.repository.DepartmentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasPermission(null, 'DEPARTMENT:CREATE')")
     public DepartmentResponseDTO createDepartment(DepartmentRequestDTO dto) {
         if (departmentRepository.existsByDepartmentCode(dto.getDepartmentCode())) {
             throw new RuntimeException("Department code already exists: " + dto.getDepartmentCode());
@@ -30,25 +32,29 @@ public class DepartmentServiceImpl implements DepartmentService {
                 .description(dto.getDescription())
                 .build();
 
-        department = departmentRepository.save(department);
-        return mapToDTO(department);
+        return mapToDTO(departmentRepository.save(department));
     }
 
     @Override
+    @PreAuthorize("hasPermission(null, 'DEPARTMENT:READ')")
     public DepartmentResponseDTO getDepartmentById(Long id) {
-        Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
-        return mapToDTO(department);
+        return mapToDTO(
+                departmentRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Department not found with id: " + id))
+        );
     }
 
     @Override
+    @PreAuthorize("hasPermission(null, 'DEPARTMENT:READ')")
     public DepartmentResponseDTO getDepartmentByCode(String departmentCode) {
-        Department department = departmentRepository.findByDepartmentCode(departmentCode)
-                .orElseThrow(() -> new RuntimeException("Department not found with code: " + departmentCode));
-        return mapToDTO(department);
+        return mapToDTO(
+                departmentRepository.findByDepartmentCode(departmentCode)
+                        .orElseThrow(() -> new RuntimeException("Department not found with code: " + departmentCode))
+        );
     }
 
     @Override
+    @PreAuthorize("hasPermission(null, 'DEPARTMENT:READ_ALL')")
     public List<DepartmentResponseDTO> getAllDepartments() {
         return departmentRepository.findAll().stream()
                 .map(this::mapToDTO)
@@ -57,12 +63,13 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasPermission(null, 'DEPARTMENT:UPDATE')")
     public DepartmentResponseDTO updateDepartment(Long id, DepartmentRequestDTO dto) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
 
         if (!department.getDepartmentCode().equals(dto.getDepartmentCode()) &&
-            departmentRepository.existsByDepartmentCode(dto.getDepartmentCode())) {
+                departmentRepository.existsByDepartmentCode(dto.getDepartmentCode())) {
             throw new RuntimeException("Department code already exists: " + dto.getDepartmentCode());
         }
 
@@ -70,12 +77,12 @@ public class DepartmentServiceImpl implements DepartmentService {
         department.setName(dto.getName());
         department.setDescription(dto.getDescription());
 
-        department = departmentRepository.save(department);
-        return mapToDTO(department);
+        return mapToDTO(departmentRepository.save(department));
     }
 
     @Override
     @Transactional
+    @PreAuthorize("hasPermission(null, 'DEPARTMENT:DELETE')")
     public void deleteDepartment(Long id) {
         if (!departmentRepository.existsById(id)) {
             throw new RuntimeException("Department not found with id: " + id);
@@ -92,4 +99,5 @@ public class DepartmentServiceImpl implements DepartmentService {
                 .build();
     }
 }
+
 

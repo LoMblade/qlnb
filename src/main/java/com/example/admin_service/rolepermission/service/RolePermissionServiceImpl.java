@@ -25,16 +25,22 @@ public class RolePermissionServiceImpl implements RolePermissionService {
     @Override
     @Transactional
     public void assignPermissionsToRole(AssignPermissionRequestDTO dto) {
-        Role role = roleRepository.findByRoleCode(dto.getRoleCode())
-                .orElseThrow(() -> new RuntimeException("Role not found with code: " + dto.getRoleCode()));
 
-        // Remove existing permissions for this role
+        Role role = roleRepository.findByRoleCode(dto.getRoleCode())
+                .orElseThrow(() ->
+                        new RuntimeException("Role not found: " + dto.getRoleCode())
+                );
+
+        // Xóa toàn bộ permission cũ của role
         rolePermissionRepository.deleteByRoleId(role.getId());
 
-        // Assign new permissions
+        // Gán lại permission mới
         for (String permissionCode : dto.getPermissionCodes()) {
+
             Permission permission = permissionRepository.findByPermissionCode(permissionCode)
-                    .orElseThrow(() -> new RuntimeException("Permission not found with code: " + permissionCode));
+                    .orElseThrow(() ->
+                            new RuntimeException("Permission not found: " + permissionCode)
+                    );
 
             RolePermission rolePermission = RolePermission.builder()
                     .role(role)
@@ -47,10 +53,33 @@ public class RolePermissionServiceImpl implements RolePermissionService {
 
     @Override
     @Transactional
-    public void removePermissionFromRole(String roleCode, String permissionCode) {
-        RolePermission rolePermission = rolePermissionRepository
-                .findByRoleCodeAndPermissionCode(roleCode, permissionCode)
-                .orElseThrow(() -> new RuntimeException("Role permission not found"));
+    public void removePermissionFromRole(
+            String roleCode,
+            Permission.ResourceType resourceType,
+            Permission.ActionType actionType
+    ) {
+        // Build permissionCode theo chuẩn RESOURCE_ACTION
+        String permissionCode = resourceType.name() + "_" + actionType.name();
+
+        Role role = roleRepository.findByRoleCode(roleCode)
+                .orElseThrow(() ->
+                        new RuntimeException("Role not found: " + roleCode)
+                );
+
+        Permission permission = permissionRepository.findByPermissionCode(permissionCode)
+                .orElseThrow(() ->
+                        new RuntimeException("Permission not found: " + permissionCode)
+                );
+
+        RolePermission rolePermission =
+                rolePermissionRepository
+                        .findByRoleAndPermission(role, permission)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Permission " + permissionCode +
+                                                " not assigned to role " + roleCode
+                                )
+                        );
 
         rolePermissionRepository.delete(rolePermission);
     }
@@ -64,19 +93,27 @@ public class RolePermissionServiceImpl implements RolePermissionService {
 
     @Override
     public boolean hasPermission(String roleCode, String permissionCode) {
-        return rolePermissionRepository.findByRoleCodeAndPermissionCode(roleCode, permissionCode)
+        return rolePermissionRepository
+                .findByRoleCodeAndPermissionCode(roleCode, permissionCode)
                 .isPresent();
     }
 
     @Override
-    public boolean hasPermission(String roleCode, String resourceType, String actionType) {
-        Permission.ResourceType resType = Permission.ResourceType.valueOf(resourceType.toUpperCase());
-        Permission.ActionType actType = Permission.ActionType.valueOf(actionType.toUpperCase());
+    public boolean hasPermission(
+            String roleCode,
+            String resourceType,
+            String actionType
+    ) {
+        Permission.ResourceType resType =
+                Permission.ResourceType.valueOf(resourceType.toUpperCase());
 
-        List<RolePermission> rolePermissions = rolePermissionRepository.findByRoleCode(roleCode);
-        return rolePermissions.stream()
-                .anyMatch(rp -> rp.getPermission().getResourceType() == resType &&
-                               rp.getPermission().getActionType() == actType);
+        Permission.ActionType actType =
+                Permission.ActionType.valueOf(actionType.toUpperCase());
+
+        return rolePermissionRepository.findByRoleCode(roleCode).stream()
+                .anyMatch(rp ->
+                        rp.getPermission().getResourceType() == resType &&
+                                rp.getPermission().getActionType() == actType
+                );
     }
 }
-

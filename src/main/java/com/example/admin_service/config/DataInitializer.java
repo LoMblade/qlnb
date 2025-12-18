@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -26,17 +25,19 @@ public class DataInitializer implements CommandLineRunner {
     private final RolePermissionRepository rolePermissionRepository;
     private final DepartmentRepository departmentRepository;
 
+
     @Override
     public void run(String... args) {
-        initializeRoles();
-        initializePermissions();
-        assignAdminPermissions();
-        log.info("Data initialization completed");
+        initializeRoles();       // Khởi tạo các vai trò mặc định
+        initializePermissions(); // Khởi tạo quyền mặc định
+        assignAdminPermissions();// Gán tất cả quyền cho ADMIN
+        log.info("khởi tạo data xong");
     }
 
+// khởi tạo role mặc định
     private void initializeRoles() {
         if (roleRepository.count() == 0) {
-            // Create ADMIN role (root role)
+            // ADMIN role: root role
             Role adminRole = Role.builder()
                     .roleCode("ADMIN")
                     .name("Administrator")
@@ -45,7 +46,7 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
             adminRole = roleRepository.save(adminRole);
 
-            // Create TEAM_LEAD role (child of ADMIN)
+            // TEAM_LEAD role: child của ADMIN
             Role teamLeadRole = Role.builder()
                     .roleCode("TEAM_LEAD")
                     .name("Team Leader")
@@ -54,7 +55,7 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
             teamLeadRole = roleRepository.save(teamLeadRole);
 
-            // Create USER role (child of TEAM_LEAD)
+            // USER role: child của TEAM_LEAD
             Role userRole = Role.builder()
                     .roleCode("USER")
                     .name("User")
@@ -67,6 +68,7 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    // tạo permission mặc dịnh
     private void initializePermissions() {
         if (permissionRepository.count() == 0) {
             // Department permissions
@@ -99,10 +101,13 @@ public class DataInitializer implements CommandLineRunner {
             createPermission("PERM_UPDATE", "Update Permission", "Update permission information", Permission.ResourceType.PERMISSION, Permission.ActionType.UPDATE);
             createPermission("PERM_DELETE", "Delete Permission", "Delete permission", Permission.ResourceType.PERMISSION, Permission.ActionType.DELETE);
 
-            log.info("Permissions initialized");
+            log.info("Permissions đã khởi tạo");
         }
     }
 
+    /**
+     * Tạo một permission nếu chưa tồn tại
+     */
     private void createPermission(String code, String name, String description, Permission.ResourceType resourceType, Permission.ActionType actionType) {
         if (!permissionRepository.existsByPermissionCode(code)) {
             Permission permission = Permission.builder()
@@ -116,13 +121,15 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    /**
+     * Gán tất cả permission hiện tại cho ADMIN role
+     */
     private void assignAdminPermissions() {
         Role adminRole = roleRepository.findByRoleCode("ADMIN")
                 .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
 
-        // Check if admin already has permissions assigned
+        // Chỉ gán nếu chưa có permission nào
         if (rolePermissionRepository.findByRoleId(adminRole.getId()).isEmpty()) {
-            // Assign all permissions to ADMIN
             List<Permission> allPermissions = permissionRepository.findAll();
             for (Permission permission : allPermissions) {
                 RolePermission rolePermission = RolePermission.builder()
@@ -135,4 +142,3 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 }
-

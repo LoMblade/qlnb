@@ -31,15 +31,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.tokenProvider = tokenProvider;
         this.userDetailsService = userDetailsService;
     }
-
-    /**
-     * BỎ QUA hoàn toàn auth filter cho API auth
-     */
+    //Bỏ qua auth filter
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return request.getServletPath().startsWith("/api/auth/");
     }
 
+    // lấy token → xác thực → gắn user → cho vào hệ thống
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -53,19 +51,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 String token = header.substring(7);
 
-                // 1️⃣ Token phải hợp lệ
+                // Token phải hợp lệ
                 if (!tokenProvider.validateToken(token)) {
                     filterChain.doFilter(request, response);
                     return;
                 }
 
-                // 2️⃣ CHẶN REFRESH TOKEN
+                // CHẶN REFRESH TOKEN
                 if (tokenProvider.isRefreshToken(token)) {
                     filterChain.doFilter(request, response);
                     return;
                 }
 
-                // 3️⃣ Chỉ ACCESS TOKEN mới vào đây
+                // Chỉ ACCESS TOKEN mới vào đây
                 String username = tokenProvider.getUsernameFromJWT(token);
 
                 var userDetails =
